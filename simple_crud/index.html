@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html data-bs-theme="dark">
+
+<head>
+    <base target="_top">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.min.css" rel="stylesheet">
+    <style>
+        .position-fixed {
+            top: 10px;
+            right: 10px;
+            z-index: 9999;
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="navbar bg-dark navbar-dark fixed-top navbar-expand-sm border-bottom border-body">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">Simple CRUD</a>
+        </div>
+    </nav>
+
+    <div class="container p-5">
+        <form id="dataForm" onsubmit="event.preventDefault(); validateAndSubmit()" class="mt-4">
+            <h2>Tambah / Edit Data</h2>
+            <div class="mb-3">
+                <label for="nama" class="form-label">Nama Lengkap:</label>
+                <input type="text" id="nama" name="nama" class="form-control">
+            </div>
+            <div class="mb-3">
+                <label for="jenisKelamin" class="form-label">Jenis Kelamin:</label>
+                <select id="jenisKelamin" name="jenisKelamin" class="form-select">
+                    <option value="Laki-laki">Laki-laki</option>
+                    <option value="Perempuan">Perempuan</option>
+                </select>
+            </div>
+            <div class="mb-3">
+                <label for="kewarganegaraan" class="form-label">Kewarganegaraan:</label>
+                <input type="text" id="kewarganegaraan" name="kewarganegaraan" class="form-control">
+            </div>
+            <div class="mb-3">
+                <label for="agama" class="form-label">Agama:</label>
+                <select id="agama" name="agama" class="form-select">
+                    <option value="Buddha">Buddha</option>
+                    <option value="Hindu">Hindu</option>
+                    <option value="Islam">Islam</option>
+                    <option value="Katolik">Katolik</option>
+                    <option value="Konghucu">Konghucu</option>
+                    <option value="Protestan">Protestan</option>
+
+                </select>
+            </div>
+            <div class="mb-3">
+                <label for="statusPerkawinan" class="form-label">Status Perkawinan:</label>
+                <select id="statusPerkawinan" name="statusPerkawinan" class="form-select">
+                    <option value="Belum Kawin">Belum Menikah</option>
+                    <option value="Cerai Hidup">Cerai Hidup</option>
+                    <option value="Cerai Mati">Cerai Mati</option>
+                    <option value="Kawin">Menikah</option>
+
+                </select>
+            </div>
+            <input type="hidden" id="rowToUpdate" name="rowToUpdate">
+            <button type="submit" class="btn btn-primary">Simpan</button>
+        </form>
+
+        <!-- Alert -->
+        <div id="alertPlaceholder" class="position-fixed top-0 end-0 p-3"></div>
+
+        <!-- Confirmation Modal -->
+        <div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-labelledby="confirmDeleteModalLabel"
+            aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="confirmDeleteModalLabel">Hapus Data?</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>Apakah Anda yakin ingin menghapus data ini?</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tidak</button>
+                        <button type="button" class="btn btn-primary" id="confirmDeleteButton">Ya</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <h2 class="pt-4">Data</h2>
+        <table id="dataTable" class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Nama Lengkap</th>
+                    <th>Jenis Kelamin</th>
+                    <th>Kewarganegaraan</th>
+                    <th>Agama</th>
+                    <th>Status Perkawinan</th>
+                    <th>Aksi</th>
+                </tr>
+            </thead>
+            <tbody id="dataBody">
+            </tbody>
+        </table>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+
+        // Show Alert
+        function showAlert(message, alertType) {
+            var alertPlaceholder = document.getElementById('alertPlaceholder');
+            var alertDiv = document.createElement('div');
+            alertDiv.className = 'alert alert-' + alertType + ' alert-dismissible fade show';
+            alertDiv.role = 'alert';
+            alertDiv.innerHTML = message;
+            alertPlaceholder.appendChild(alertDiv);
+            setTimeout(function () {
+                alertDiv.style.display = 'none';
+            }, 3000);
+        }
+
+        // Form Validation
+        function validateAndSubmit() {
+            var nama = document.getElementById("nama").value;
+            var jenisKelamin = document.getElementById("jenisKelamin").value;
+            var kewarganegaraan = document.getElementById("kewarganegaraan").value;
+            var agama = document.getElementById("agama").value;
+            var statusPerkawinan = document.getElementById("statusPerkawinan").value;
+
+            // Check Input If Empty And Show Alert
+            if (!nama) {
+                showAlert("Nama masih kosong", "danger");
+                return;
+            }
+            if (!jenisKelamin) {
+                showAlert("Jenis Kelamin masih kosong", "danger");
+                return;
+            }
+            if (!kewarganegaraan) {
+                showAlert("Kewarganegaraan masih kosong", "danger");
+                return;
+            }
+            if (!agama) {
+                showAlert("Agama masih kosong", "danger");
+                return;
+            }
+            if (!statusPerkawinan) {
+                showAlert("Status Perkawinan masih kosong", "danger");
+                return;
+            }
+
+            // Check If Data Exists
+            checkAndAddData(nama, jenisKelamin, kewarganegaraan, agama, statusPerkawinan);
+        }
+
+        // Check If Data Already Exists And Add Data If Not Exists
+        function checkAndAddData(nama, jenisKelamin, kewarganegaraan, agama, statusPerkawinan) {
+            google.script.run.withSuccessHandler(function (dataExists) {
+                if (dataExists) {
+                    showAlert("Data sudah ada", "danger");
+                } else {
+                    addOrUpdateData();
+                }
+            }).checkDataExists(nama, jenisKelamin, kewarganegaraan, agama, statusPerkawinan);
+        }
+
+        // Create Or Update Data
+        function addOrUpdateData() {
+            var nama = document.getElementById("nama").value;
+            var jenisKelamin = document.getElementById("jenisKelamin").value;
+            var kewarganegaraan = document.getElementById("kewarganegaraan").value;
+            var agama = document.getElementById("agama").value;
+            var statusPerkawinan = document.getElementById("statusPerkawinan").value;
+            var rowToUpdate = document.getElementById("rowToUpdate").value;
+
+            if (rowToUpdate) {
+                google.script.run.withSuccessHandler(function () {
+                    showAlert("Data berhasil diperbarui", "success"); // Show Alert For Updated Data
+                    loadData();
+                }).updateData(parseInt(rowToUpdate), nama, jenisKelamin, kewarganegaraan, agama, statusPerkawinan);
+            } else {
+                google.script.run.withSuccessHandler(function () {
+                    showAlert("Data berhasil disimpan", "success"); // Show Alert For Submitted Data
+                    loadData();
+                }).addData(nama, jenisKelamin, kewarganegaraan, agama, statusPerkawinan);
+            }
+
+            // Clear Form After Submit
+            document.getElementById("dataForm").reset();
+        }
+
+        // Edit Or Update Data
+        function showEditForm(row, rowData) {
+            document.getElementById("nama").value = rowData[0];
+            document.getElementById("jenisKelamin").value = rowData[1];
+            document.getElementById("kewarganegaraan").value = rowData[2];
+            document.getElementById("agama").value = rowData[3];
+            document.getElementById("statusPerkawinan").value = rowData[4];
+            document.getElementById("rowToUpdate").value = row;
+        }
+
+        // Delete Data
+        function deleteData(row) {
+            // Memunculkan modal konfirmasi penghapusan
+            $('#confirmDeleteModal').modal('show');
+
+            // Mengatur event handler untuk tombol "Ya" di modal
+            $('#confirmDeleteButton').click(function () {
+                // Panggil fungsi deleteData jika tombol "Ya" ditekan
+                google.script.run.withSuccessHandler(function () {
+                    showAlert("Data berhasil dihapus", "success");
+                    loadData();
+                }).deleteData(row);
+
+                // Tutup modal setelah data dihapus
+                $('#confirmDeleteModal').modal('hide');
+            });
+        }
+
+
+        // Get Data From Google Spreadsheet
+        function loadData() {
+            var dataBody = document.getElementById("dataBody");
+            dataBody.innerHTML = "";
+
+            google.script.run.withSuccessHandler(function (data) {
+                data.forEach(function (row, index) {
+                    var newRow = document.createElement("tr");
+                    for (var i = 0; i < row.length; i++) {
+                        var cell = document.createElement("td");
+                        cell.appendChild(document.createTextNode(row[i]));
+                        newRow.appendChild(cell);
+                    }
+                    var actionCell = document.createElement("td");
+                    var deleteButton = document.createElement("button");
+                    deleteButton.innerHTML = "Hapus";
+                    deleteButton.className = "btn btn-danger me-2";
+                    deleteButton.onclick = function () {
+                        deleteData(index + 1);
+                    };
+                    actionCell.appendChild(deleteButton);
+
+                    var updateButton = document.createElement("button");
+                    updateButton.innerHTML = "Update";
+                    updateButton.className = "btn btn-primary";
+                    updateButton.onclick = function () {
+                        showEditForm(index + 1, row);
+                    };
+                    actionCell.appendChild(updateButton);
+
+                    newRow.appendChild(actionCell);
+                    dataBody.appendChild(newRow);
+                });
+
+                // Initialize DataTables After Loading Data
+                $('#dataTable').DataTable();
+            }).getData();
+        }
+
+        // Loads Data When The Page Loads
+        window.onload = loadData;
+    </script>
+</body>
+
+</html>
